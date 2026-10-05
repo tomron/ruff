@@ -22,6 +22,9 @@ pub(crate) struct Block<'a> {
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum Trailer {
     Sibling,
+    /// Like [`Trailer::Sibling`], but the import block is followed by a detached comment (and
+    /// then a class or function), so additional blank lines are allowed.
+    DetachedComment,
     ClassDef,
     FunctionDef,
 }
@@ -87,14 +90,14 @@ impl<'a> BlockBuilder<'a> {
             match stmt {
                 Stmt::FunctionDef(_) => {
                     if helpers::has_comment_break(stmt, self.locator) {
-                        Trailer::Sibling
+                        Trailer::DetachedComment
                     } else {
                         Trailer::FunctionDef
                     }
                 }
                 Stmt::ClassDef(_) => {
                     if helpers::has_comment_break(stmt, self.locator) {
-                        Trailer::Sibling
+                        Trailer::DetachedComment
                     } else {
                         Trailer::ClassDef
                     }

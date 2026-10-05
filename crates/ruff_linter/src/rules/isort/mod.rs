@@ -130,7 +130,7 @@ pub(crate) fn format_imports(
 
     match trailer {
         None => {}
-        Some(Trailer::Sibling) => {
+        Some(Trailer::Sibling | Trailer::DetachedComment) => {
             if lines_after_imports >= 0 {
                 for _ in 0..lines_after_imports {
                     output.push_str(&stylist.line_ending());
@@ -383,6 +383,7 @@ mod tests {
     #[test_case(Path::new("star_before_others.py"))]
     #[test_case(Path::new("trailing_comment.py"))]
     #[test_case(Path::new("trailing_suffix.py"))]
+    #[test_case(Path::new("detached_comment_extra_blank_lines.py"))]
     #[test_case(Path::new("two_space.py"))]
     #[test_case(Path::new("type_comments.py"))]
     #[test_case(Path::new("unicode.py"))]

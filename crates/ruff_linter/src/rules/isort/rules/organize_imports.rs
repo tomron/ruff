@@ -15,7 +15,7 @@ use crate::checkers::ast::LintContext;
 use crate::codes::Category;
 use crate::line_width::LineWidthBuilder;
 use crate::package::PackageRoot;
-use crate::rules::isort::block::Block;
+use crate::rules::isort::block::{Block, Trailer};
 use crate::rules::isort::{comments, format_imports};
 use crate::settings::LinterSettings;
 use crate::{Edit, Fix, FixAvailability, Violation};
@@ -180,6 +180,37 @@ pub(crate) fn organize_imports(
     if matches_ignoring_indentation(actual, &expected) {
         return;
     }
+
+    // If the imports are followed by a detached comment, any number of blank lines (at least
+    // the expected number) may separate them:
+    //
+    // ```python
+    // import os
+    //
+    //
+    // ###########
+    // # Section
+    // ###########
+    //
+    // def f(): ...
+    // ```
+    if matches!(block.trailer, Some(Trailer::DetachedComment)) {
+        let newline = |c: char| matches!(c, '\r' | '\n');
+        let trailing_newlines = |text: &str| {
+            text[text.trim_end_matches(newline).len()..]
+                .matches('\n')
+                .count()
+        };
+        if trailing_newlines(actual) >= trailing_newlines(&expected)
+            && matches_ignoring_indentation(
+                actual.trim_end_matches(newline),
+                expected.trim_end_matches(newline),
+            )
+        {
+            return;
+        }
+    }
+
     let mut diagnostic = context.report_diagnostic(UnsortedImports, range);
     diagnostic.set_fix(Fix::safe_edit(Edit::range_replacement(
         indent(&expected, indentation).to_string(),
